@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jelajah — Rencanakan trip gunung, pantai, dan kota</title>
+<meta name="description" content="Kumpulkan destinasi gunung, pantai, dan kota jadi satu rencana perjalanan, lengkap dengan perkiraan durasi dan biaya." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#EDEAE0;
+    --canvas-deep:#E3DFD0;
+    --ink:#1D2B1E;
+    --ink-soft:#4A5449;
+    --line:#C9C2AC;
+    --card:#F7F5EE;
+    --gunung:#4A6741;
+    --gunung-soft:#DCE4D6;
+    --pantai:#1B6B93;
+    --pantai-soft:#D6E6EC;
+    --kota:#B5541F;
+    --kota-soft:#EFDCCB;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--canvas);
+    color:var(--ink);
+    font-family:'Public Sans', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .headline{font-family:'Fraunces', serif;}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer; border:none;}
+  input{font-family:inherit;}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px;}
+
+  header{
+    position:sticky; top:0; z-index:20;
+    background:rgba(237,234,224,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  header .bar{display:flex; align-items:center; justify-content:space-between; padding:16px 0;}
+  .logo{display:flex; align-items:center; gap:8px; font-size:1.3rem; font-weight:600;}
+  .logo svg{color:var(--gunung);}
+  #tripBtn{
+    background:var(--ink); color:var(--canvas);
+    border-radius:999px; padding:9px 16px; font-size:0.9rem; font-weight:500;
+    display:flex; align-items:center; gap:8px;
+  }
+  #tripCount{
+    background:var(--canvas); color:var(--ink);
+    border-radius:999px; width:20px; height:20px; font-size:0.75rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .hero{padding:56px 0 40px;}
+  .hero .eyebrow{color:var(--ink-soft); font-size:0.9rem; margin:0 0 12px;}
+  .hero h1{
+    font-size:clamp(2rem, 4.5vw, 3rem); font-weight:600; line-height:1.1;
+    max-width:640px; margin:0;
+  }
+  .hero p.sub{color:var(--ink-soft); max-width:560px; margin:20px 0 0; line-height:1.6;}
+  .contours{width:100%; height:64px; margin-top:36px; opacity:0.7;}
+
+  .controls{
+    display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between;
+    padding-bottom:24px;
+  }
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    border:1px solid var(--line); background:var(--canvas-deep); color:var(--ink-soft);
+    border-radius:999px; padding:7px 16px; font-size:0.88rem; font-weight:500; text-transform:capitalize;
+    transition:background .15s, color .15s;
+  }
+  .chip.active{color:var(--canvas); border-color:transparent;}
+  .chip .n{opacity:0.7;}
+  .searchbox{
+    display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--card);
+    border-radius:999px; padding:9px 16px; width:100%; max-width:260px;
+  }
+  .searchbox input{
+    background:transparent; border:none; outline:none; font-size:0.9rem; color:var(--ink); width:100%;
+  }
+  .searchbox input::placeholder{color:var(--ink-soft); opacity:0.7;}
+
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:20px;
+    padding-bottom:96px;
+  }
+  .empty{color:var(--ink-soft); text-align:center; padding:80px 0; font-size:0.9rem; grid-column:1/-1;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px;
+    display:flex; flex-direction:column; gap:12px; transition:box-shadow .15s;
+  }
+  .card:hover{box-shadow:0 6px 18px rgba(29,43,30,0.08);}
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+  .icon-badge{
+    width:38px; height:38px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .level{
+    font-size:0.72rem; border:1px solid; border-radius:999px; padding:2px 10px; flex-shrink:0; white-space:nowrap;
+  }
+  .card h3{margin:0; font-size:1.05rem; font-weight:600; line-height:1.3;}
+  .card .region{
+    display:flex; align-items:center; gap:5px; color:var(--ink-soft); font-size:0.85rem; margin-top:3px;
+  }
+  .card p.desc{color:var(--ink-soft); font-size:0.88rem; line-height:1.55; margin:0; flex:1;}
+  .card .meta{
+    display:flex; align-items:center; gap:16px; color:var(--ink-soft); font-size:0.85rem;
+    border-top:1px solid var(--line); padding-top:12px;
+  }
+  .card .meta span{display:flex; align-items:center; gap:5px;}
+  .add-btn{
+    margin-top:2px; border-radius:8px; padding:10px; font-size:0.88rem; font-weight:500; color:var(--canvas);
+    display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+
+  /* Drawer */
+  #overlay{
+    position:fixed; inset:0; background:rgba(29,43,30,0.4); z-index:30;
+    display:none;
+  }
+  #drawer{
+    position:fixed; top:0; right:0; height:100%; width:100%; max-width:420px;
+    background:var(--canvas); z-index:31; display:flex; flex-direction:column;
+    box-shadow:-8px 0 24px rgba(0,0,0,0.15);
+    transform:translateX(100%); transition:transform .25s ease;
+  }
+  #overlay.open{display:block;}
+  #overlay.open #drawer{transform:translateX(0);}
+  .drawer-head{
+    border-bottom:1px solid var(--line); padding:20px 24px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .drawer-head h2{margin:0; font-size:1.25rem; font-weight:600;}
+  #closeDrawer{background:none; color:var(--ink-soft); padding:4px;}
+  .drawer-body{flex:1; overflow-y:auto; padding:20px 24px;}
+  .drawer-empty{color:var(--ink-soft); font-size:0.9rem; text-align:center; padding:64px 0; line-height:1.6;}
+  .trip-item{
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px;
+    display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;
+  }
+  .trip-item .ti-info{flex:1; min-width:0;}
+  .trip-item .ti-info p.name{margin:0; font-weight:500; font-size:0.9rem;}
+  .trip-item .ti-info p.sub{margin:3px 0 0; color:var(--ink-soft); font-size:0.78rem;}
+  .trip-item button{background:none; color:var(--ink-soft); padding:2px;}
+  .drawer-foot{
+    border-top:1px solid var(--line); background:var(--canvas-deep); padding:20px 24px;
+    display:none; flex-direction:column; gap:6px;
+  }
+  .drawer-foot.show{display:flex;}
+  .foot-row{display:flex; align-items:center; justify-content:space-between; font-size:0.9rem;}
+  .foot-row .label{color:var(--ink-soft);}
+  .foot-row .val{font-weight:500;}
+  .foot-note{color:var(--ink-soft); font-size:0.78rem; margin-top:6px; display:flex; align-items:center; gap:4px;}
+
+  footer{border-top:1px solid var(--line); padding:28px 0; color:var(--ink-soft); font-size:0.82rem;}
+
+  @media (max-width:640px){
+    .controls{flex-direction:column; align-items:stretch;}
+    .searchbox{max-width:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      <span class="headline">Jelajah</span>
+    </div>
+    <button id="tripBtn">
+      Rencana Trip
+      <span id="tripCount">0</span>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Rencanakan sendiri, dari puncak gunung sampai tepi pantai</p>
+    <h1 class="headline">Satu peta untuk gunung, pantai, dan kota yang ingin kamu datangi.</h1>
+    <p class="sub">Pilih destinasi yang cocok dengan waktu dan bujet kamu, kumpulkan jadi satu rencana perjalanan, lalu lihat total hari dan perkiraan biayanya sebelum berangkat.</p>
+    <svg class="contours" viewBox="0 0 800 90" preserveAspectRatio="none">
+      <path d="M0 70 Q 200 20 400 60 T 800 40" fill="none" stroke="#4A6741" stroke-width="1.5" opacity="0.5"/>
+      <path d="M0 56 Q 200 10 400 48 T 800 32" fill="none" stroke="#1B6B93" stroke-width="1.5" opacity="0.42"/>
+      <path d="M0 42 Q 200 0 400 36 T 800 24" fill="none" stroke="#4A6741" stroke-width="1.5" opacity="0.34"/>
+      <path d="M0 28 Q 200 -8 400 24 T 800 16" fill="none" stroke="#1B6B93" stroke-width="1.5" opacity="0.26"/>
+    </svg>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="chips" id="chips"></div>
+    <div class="searchbox">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4A5449" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="Cari destinasi atau daerah" />
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>
+  <div class="wrap">Jelajah — dibuat untuk membantu merencanakan trip di Indonesia. Semua harga adalah perkiraan.</div>
+</footer>
+
+<div id="overlay">
+  <div id="drawer">
+    <div class="drawer-head">
+      <h2 class="headline">Rencana perjalananmu</h2>
+      <button id="closeDrawer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </div>
+</div>
+
+<script>
+const CATEGORY = {
+  gunung: { label: "Gunung", color: "#4A6741", soft: "#DCE4D6",
+    icon: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>' },
+  pantai: { label: "Pantai", color: "#1B6B93", soft: "#D6E6EC",
+    icon: '<path d="M2 6c.6.5 1.2 1 2.5 1S7 6.5 7.5 6 8.7 5 10 5s2 .5 2.5 1 1.2 1 2.5 1 2-.5 2.5-1 1.2-1 2.5-1"/><path d="M2 12c.6.5 1.2 1 2.5 1S7 12.5 7.5 12 8.7 11 10 11s2 .5 2.5 1 1.2 1 2.5 1 2-.5 2.5-1 1.2-1 2.5-1"/><path d="M2 18c.6.5 1.2 1 2.5 1s1.9-.5 2.5-1 1.2-1 2.5-1 2 .5 2.5 1 1.2 1 2.5 1 2-.5 2.5-1 1.2-1 2.5-1"/>' },
+  kota: { label: "Kota", color: "#B5541F", soft: "#EFDCCB",
+    icon: '<path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><rect x="9" y="6" width="1" height="1"/><path d="M6 12H4a1 1 0 0 0-1 1v9"/>' }
+};
+
+const DESTINATIONS = [
+  { id:"bromo", name:"Gunung Bromo", region:"Jawa Timur", category:"gunung", days:2, budgetMin:800000, budgetMax:1500000, level:"Sedang", desc:"Naik jeep dini hari ke Penanjakan untuk matahari terbit di atas lautan pasir, lalu jalan kaki ke kawah." },
+  { id:"rinjani", name:"Gunung Rinjani", region:"Lombok, NTB", category:"gunung", days:4, budgetMin:1500000, budgetMax:3000000, level:"Berat", desc:"Pendakian 3–4 hari melewati Danau Segara Anak, cocok untuk yang sudah terbiasa naik gunung." },
+  { id:"prau", name:"Gunung Prau", region:"Dieng, Jawa Tengah", category:"gunung", days:1, budgetMin:300000, budgetMax:600000, level:"Mudah", desc:"Pendakian singkat semalam, cocok untuk pemula yang ingin lihat golden sunrise dari puncak." },
+  { id:"kuta-uluwatu", name:"Kuta & Uluwatu", region:"Bali", category:"pantai", days:3, budgetMin:1000000, budgetMax:2000000, level:"Santai", desc:"Kombinasi pantai surfing, tebing Uluwatu, dan sunset di Pura Uluwatu dengan tari Kecak." },
+  { id:"gili-trawangan", name:"Gili Trawangan", region:"Lombok, NTB", category:"pantai", days:3, budgetMin:1500000, budgetMax:2500000, level:"Santai", desc:"Pulau kecil tanpa kendaraan bermotor, snorkeling dengan penyu dan air laut jernih." },
+  { id:"pink-beach", name:"Pantai Pink & Komodo", region:"Labuan Bajo, NTT", category:"pantai", days:3, budgetMin:2000000, budgetMax:4000000, level:"Sedang", desc:"Trip kapal ke Taman Nasional Komodo, snorkeling, dan pasir pink yang langka di dunia." },
+  { id:"yogyakarta", name:"Yogyakarta", region:"DI Yogyakarta", category:"kota", days:3, budgetMin:1000000, budgetMax:2000000, level:"Santai", desc:"Candi Borobudur & Prambanan, Malioboro, dan wisata kuliner gudeg serta angkringan." },
+  { id:"bandung", name:"Bandung", region:"Jawa Barat", category:"kota", days:2, budgetMin:800000, budgetMax:1500000, level:"Santai", desc:"Udara sejuk, kawasan Lembang, factory outlet, dan wisata kuliner khas Sunda." },
+  { id:"malang-batu", name:"Malang & Batu", region:"Jawa Timur", category:"kota", days:3, budgetMin:900000, budgetMax:1800000, level:"Santai", desc:"Kota sejuk dengan taman rekreasi keluarga, kota tua, dan kafe-kafe dengan pemandangan gunung." }
+];
+
+let filter = "semua";
+let query = "";
+let tripIds = [];
+try { tripIds = JSON.parse(localStorage.getItem("jelajah_trip") || "[]"); } catch(e) { tripIds = []; }
+
+function rupiah(n){ return "Rp" + n.toLocaleString("id-ID"); }
+function saveTrip(){ localStorage.setItem("jelajah_trip", JSON.stringify(tripIds)); }
+
+function iconSvg(catKey, size, color){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CATEGORY[catKey].icon}</svg>`;
+}
+
+function renderChips(){
+  const counts = {
+    semua: DESTINATIONS.length,
+    gunung: DESTINATIONS.filter(d=>d.category==="gunung").length,
+    pantai: DESTINATIONS.filter(d=>d.category==="pantai").length,
+    kota: DESTINATIONS.filter(d=>d.category==="kota").length,
+  };
+  const keys = ["semua","gunung","pantai","kota"];
+  const el = document.getElementById("chips");
+  el.innerHTML = keys.map(key => {
+    const active = filter === key;
+    const color = key !== "semua" ? CATEGORY[key].color : "#1D2B1E";
+    const style = active ? `background:${color}; color:#EDEAE0;` : "";
+    return `<button class="chip${active?' active':''}" style="${style}" data-key="${key}">${key} <span class="n">· ${counts[key]}</span></button>`;
+  }).join("");
+  el.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => { filter = btn.dataset.key; renderAll(); });
+  });
+}
+
+function cardHtml(d){
+  const cat = CATEGORY[d.category];
+  const added = tripIds.includes(d.id);
+  return `
+  <div class="card">
+    <div class="card-top">
+      <div class="icon-badge" style="background:${cat.soft};">${iconSvg(d.category,18,cat.color)}</div>
+      <span class="level" style="color:${cat.color}; border-color:${cat.color};">${d.level}</span>
+    </div>
+    <div>
+      <h3>${d.name}</h3>
+      <div class="region">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A5449" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${d.region}
+      </div>
+    </div>
+    <p class="desc">${d.desc}</p>
+    <div class="meta">
+      <span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A5449" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${d.days} hari
+      </span>
+      <span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A5449" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/></svg>
+        ${rupiah(d.budgetMin)}–${rupiah(d.budgetMax)}
+      </span>
+    </div>
+    <button class="add-btn" style="background:${added?'#1D2B1E':cat.color};" data-id="${d.id}">
+      ${added
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Hapus dari trip'
+        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Tambah ke trip'}
+    </button>
+  </div>`;
+}
+
+function renderGrid(){
+  const filtered = DESTINATIONS.filter(d => {
+    const matchCat = filter === "semua" || d.category === filter;
+    const q = query.trim().toLowerCase();
+    const matchQuery = q === "" || d.name.toLowerCase().includes(q) || d.region.toLowerCase().includes(q);
+    return matchCat && matchQuery;
+  });
+  const grid = document.getElementById("grid");
+  if (filtered.length === 0){
+    grid.innerHTML = `<div class="empty">Tidak ada destinasi yang cocok. Coba kata kunci lain.</div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(cardHtml).join("");
+  grid.querySelectorAll(".add-btn").forEach(btn => {
+    btn.addEventListener("click", () => toggleTrip(btn.dataset.id));
+  });
+}
+
+function toggleTrip(id){
+  if (tripIds.includes(id)) tripIds = tripIds.filter(x => x !== id);
+  else tripIds = [...tripIds, id];
+  saveTrip();
+  renderAll();
+}
+
+function renderDrawer(){
+  const items = DESTINATIONS.filter(d => tripIds.includes(d.id));
+  document.getElementById("tripCount").textContent = tripIds.length;
+
+  const body = document.getElementById("drawerBody");
+  if (items.length === 0){
+    body.innerHTML = `<div class="drawer-empty">Trip kamu masih kosong.<br>Tambahkan destinasi gunung, pantai, atau kota dari daftar untuk mulai merencanakan.</div>`;
+  } else {
+    body.innerHTML = items.map(d => {
+      const cat = CATEGORY[d.category];
+      return `
+      <div class="trip-item">
+        <div class="icon-badge" style="background:${cat.soft}; width:34px; height:34px;">${iconSvg(d.category,15,cat.color)}</div>
+        <div class="ti-info">
+          <p class="name">${d.name}</p>
+          <p class="sub">${d.days} hari · ${rupiah(d.budgetMin)}–${rupiah(d.budgetMax)}</p>
+        </div>
+        <button data-id="${d.id}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    }).join("");
+    body.querySelectorAll("button[data-id]").forEach(btn => {
+      btn.addEventListener("click", () => toggleTrip(btn.dataset.id));
+    });
+  }
+
+  const foot = document.getElementById("drawerFoot");
+  if (items.length > 0){
+    const totalDays = items.reduce((s,d)=>s+d.days,0);
+    const totalMin = items.reduce((s,d)=>s+d.budgetMin,0);
+    const totalMax = items.reduce((s,d)=>s+d.budgetMax,0);
+    foot.classList.add("show");
+    foot.innerHTML = `
+      <div class="foot-row"><span class="label">Total durasi</span><span class="val">${totalDays} hari</span></div>
+      <div class="foot-row"><span class="label">Perkiraan biaya</span><span class="val">${rupiah(totalMin)}–${rupiah(totalMax)}</span></div>
+      <p class="foot-note">Belum termasuk transportasi antar destinasi</p>
+    `;
+  } else {
+    foot.classList.remove("show");
+    foot.innerHTML = "";
+  }
+}
+
+function renderAll(){
+  renderChips();
+  renderGrid();
+  renderDrawer();
+}
+
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  query = e.target.value;
+  renderGrid();
+});
+document.getElementById("tripBtn").addEventListener("click", () => document.getElementById("overlay").classList.add("open"));
+document.getElementById("closeDrawer").addEventListener("click", () => document.getElementById("overlay").classList.remove("open"));
+document.getElementById("overlay").addEventListener("click", (e) => {
+  if (e.target.id === "overlay") document.getElementById("overlay").classList.remove("open");
+});
+
+renderAll();
+</script>
+</body>
+</html>
